@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Gestión de Usuarios</title>
+    <link href="/css/style_index.css" rel="stylesheet">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/images/logosinfondo.png">
+</head>
+<body>
+<nav>
+    <ul class="sidebar">
+        <li onclick="hideSidebar()"><a href="#"><svg xmlns="http://www.w3.org/2000/svg" height="26" viewBox="0 96 960 960" width="26"><path d="m249 849-42-42 231-231-231-231 42-42 231 231 231-231 42 42-231 231 231 231-42 42-231-231-231 231Z"/></svg></a></li>
+        <li><a href="/index">Dashboard</a></li>
+        <li sec:authorize="hasRole('ADMIN')"><a href="/gestion_usuarios">Gestión de Usuarios</a></li>
+        <li sec:authorize="hasRole('ADMIN')"><a href="#">Configuración</a></li>
+        <li><a href="/profile">Perfil</a></li>
+        <li><a href="/logout">Salir</a></li> <!-- Enlace de cierre de sesión -->
+    </ul>
+    <ul>
+        <li><a href="#"><img src="/images/logosinfondo.png" class="image" alt="logo" width="26" height="26"> OsmoGuard</a></li>
+        <li class="hideOnMobile"><a href="/index">Dashboard</a></li>
+        <li class="hideOnMobile" sec:authorize="hasRole('ADMIN')"><a href="/gestion_usuarios">Gestión de Usuarios</a></li>
+        <li class="hideOnMobile" sec:authorize="hasRole('ADMIN')"><a href="#">Configuración</a></li>
+        <li class="hideOnMobile"><a href="/profile">Perfil</a></li>
+        <li class="hideOnMobile"><a href="/logout">Salir</a></li> <!-- Enlace de cierre de sesión -->
+        <li class="menu-button" onclick="showSidebar()"><a href="#"><svg xmlns="http://www.w3.org/2000/svg" height="26" viewBox="0 96 960 960" width="26"><path d="M120 816v-60h720v60H120Zm0-210v-60h720v60H120Zm0-210v-60h720v60H120Z"/></svg></a></li>
+    </ul>
+</nav>
+
+<div class="container mt-4">
+    <h1 class="mb-4">Gestión de Usuarios</h1>
+
+    <!-- Filtros y búsqueda -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <select id="filterStatus" class="form-control">
+                <option value="all">Todos</option>
+                <option value="active">Activado</option>
+                <option value="inactive">Desactivado</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <input type="text" id="searchDni" class="form-control" placeholder="DNI">
+        </div>
+        <div class="col-md-2">
+            <input type="text" id="searchName" class="form-control" placeholder="Nombre">
+        </div>
+        <div class="col-md-3">
+            <input type="text" id="searchEmail" class="form-control" placeholder="Correo electrónico">
+        </div>
+        <div class="col-md-3 text-right">
+            <button id="btnSearch" class="btn btn-primary">Buscar</button>
+            <button id="btnReset" class="btn btn-secondary">Restablecer</button>
+            <div class="btn-group">
+                <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                    Exportar
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#" id="btnExportCurrent">Exportar Página Actual</a></li>
+                    <li><a class="dropdown-item" href="#" id="btnExportAll">Exportar Todo</a></li>
+                </ul>
+            </div>
+            <button id="btnCreateUser" class="btn btn-success">Crear Usuario</button>
+        </div>
+    </div>
+
+    <!-- Tabla de usuarios -->
+    <div id="userTable" class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                <th>Activo</th>
+                <th>Nombre</th>
+                <th>Apellido</th>
+                <th>DNI</th>
+                <th>Email</th>
+                <th>Fecha de Nacimiento</th>
+                <th>Rol</th>
+                <th>Operación</th>
+            </tr>
+            </thead>
+            <tbody>
+            <!-- Contenido de la tabla se actualizará dinámicamente -->
+            </tbody>
+        </table>
+    </div>
+
+    <div id="totalUsers" class="mt-2"></div> <!-- Añadido para mostrar el total de usuarios -->
+
+
+    <!-- Selector de items por página -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <select id="itemsPerPage" class="form-control">
+                <option value="5">5/page</option>
+                <option value="10">10/page</option>
+                <option value="20">20/page</option>
+                <option value="30">30/page</option>
+                <option value="40">40/page</option>
+                <option value="50">50/page</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Paginación -->
+    <nav>
+        <ul id="pagination" class="pagination">
+            <!-- Controles de paginación se actualizarán dinámicamente -->
+        </ul>
+    </nav>
+</div>
+
+<!-- Modal para restablecer contraseña -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="resetPasswordModalLabel">Restablecer Contraseña</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="resetPasswordUserId">
+                <div class="mb-3">
+                    <label for="newPassword" class="form-label">Nueva Contraseña</label>
+                    <input type="password" class="form-control" id="newPassword">
+                </div>
+                <div class="mb-3">
+                    <label for="confirmPassword" class="form-label">Confirmar Contraseña</label>
+                    <input type="password" class="form-control" id="confirmPassword">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" onclick="resetPassword()">Confirmar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para eliminar usuario -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteUserModalLabel">Confirmación de Seguridad</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Se está intentando eliminar un usuario. Tome las precauciones necesarias.</p>
+                <input type="hidden" id="deleteUserId">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" onclick="deleteUser()">Eliminar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para crear usuario -->
+<div class="modal fade" id="createUserModal" tabindex="-1" aria-labelledby="createUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createUserModalLabel">Crear Usuario</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="newUserName" class="form-label">Nombre</label>
+                    <input type="text" class="form-control" id="newUserName">
+                    <div id="nombreError" class="invalid-feedback d-none"></div>
+                </div>
+                <div class="mb-3">
+                    <label for="newUserLastName" class="form-label">Apellido</label>
+                    <input type="text" class="form-control" id="newUserLastName">
+                    <div id="apellidoError" class="invalid-feedback d-none"></div>
+                </div>
+                <div class="mb-3">
+                    <label for="newUserDni" class="form-label">DNI</label>
+                    <input type="text" class="form-control" id="newUserDni">
+                    <div id="dniError" class="invalid-feedback d-none"></div>
+                </div>
+                <div class="mb-3">
+                    <label for="newUserBirthDate" class="form-label">Fecha de Nacimiento</label>
+                    <input type="date" class="form-control" id="newUserBirthDate">
+                    <div id="fechaNacimientoError" class="invalid-feedback d-none"></div>
+                </div>
+                <div class="mb-3">
+                    <label for="newUserEmail" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="newUserEmail">
+                    <div id="emailError" class="invalid-feedback d-none"></div>
+                </div>
+                <div class="mb-3">
+                    <label for="newUserPassword" class="form-label">Contraseña</label>
+                    <input type="password" class="form-control" id="newUserPassword">
+                    <div id="pwdError" class="invalid-feedback d-none"></div>
+                </div>
+                <div class="mb-3">
+                    <label for="newUserRole" class="form-label">Rol</label>
+                    <select class="form-control" id="newUserRole">
+                        <option value="USER">Usuario</option>
+                        <option value="ADMIN">Administrador</option>
+                    </select>
+                </div>
+                <div id="createUserError" class="alert alert-danger d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" onclick="createUser()">Crear</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js" integrity="sha384-IQsoLXl5PILFhosVNubq5LC7Qb9DXgDA9i+tQ8Zj3iwWAwPtgFTxbJ8NT4GN1R8p" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js" integrity="sha384-cVKIPhGWiC2Al4u+LWgxfKTRIcfu0JTxR+EQDz/bgldoEyl4H0zUF0QKbrJ0EcQF" crossorigin="anonymous"></script>
+<script src="/js/gestion_usuarios.js"></script>
+</body>
+</html>

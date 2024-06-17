@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OsmoGuard</title>
+    <link rel="stylesheet" type="text/css" href="/css/style.css" />
+    <script src="https://kit.fontawesome.com/64d58efce2.js" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/images/logosinfondo.png">
+</head>
+<body>
+<div class="container">
+    <div class="forms-container">
+        <div class="signin-signup">
+            <form id="loginForm" th:action="@{/processLogin}" method="post" class="sign-in-form">
+                <h2 class="title">Iniciar Sesión</h2>
+                <div class="input-field">
+                    <i class="fas fa-user"></i>
+                    <input type="text" placeholder="Email" id="loginEmail" name="username" required />
+                </div>
+                <div class="input-field">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" placeholder="Contraseña" id="loginPwd" name="password" required />
+                </div>
+                <input type="submit" value="Iniciar" class="btn solid" />
+                <div id="loginError" class="alert alert-danger" style="display:none;"></div>
+                <p class="social-text">o continua con</p>
+                <div class="social-media">
+                    <a href="#" class="social-icon">
+                        <i class="fab fa-google"></i>
+                    </a>
+                </div>
+            </form>
+
+            <form id="registerForm" class="sign-up-form">
+                <h2 class="title">Registrarse</h2>
+                <div class="input-field">
+                    <i class="fas fa-user"></i>
+                    <input type="text" placeholder="Nombre" id="nombre" name="nombre" required />
+                </div>
+                <div class="error-message" id="nombreError"></div>
+                <div class="input-field">
+                    <i class="fas fa-user"></i>
+                    <input type="text" placeholder="Apellido" id="apellido" name="apellido" required />
+                </div>
+                <div class="error-message" id="apellidoError"></div>
+                <div class="input-field">
+                    <i class="fas fa-id-card"></i>
+                    <input type="text" placeholder="DNI" id="dni" name="dni" />
+                </div>
+                <div class="error-message" id="dniError"></div>
+                <div class="input-field">
+                    <i class="fas fa-calendar"></i>
+                    <input type="date" placeholder="Fecha de Nacimiento" id="fechaNacimiento" name="fechaNacimiento" required />
+                </div>
+                <div class="error-message" id="fechaNacimientoError"></div>
+                <div class="input-field">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" placeholder="Email" id="email" name="email" required />
+                </div>
+                <div class="error-message" id="emailError"></div>
+                <div class="input-field">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" placeholder="Contraseña" id="pwd" name="pwd" required />
+                </div>
+                <div class="error-message" id="pwdError"></div>
+                <input type="submit" value="Registrarse" class="btn solid" />
+                <div id="registerSuccess" class="alert alert-success" style="display:none;"></div>
+                <div id="registerError" class="alert alert-danger" style="display:none;"></div>
+                <p class="social-text">o continua con</p>
+                <div class="social-media">
+                    <a href="#" class="social-icon">
+                        <i class="fab fa-google"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="panels-container">
+        <div class="panel left-panel">
+            <div class="content">
+                <h3>¿Nuevo aquí?</h3>
+                <p>Si no tienes una cuenta puedes registrarte aquí!</p>
+                <button class="btn transparent" id="sign-up-btn">Registrarse</button>
+            </div>
+            <img src="/images/logosinfondo.png" class="image" alt="logo">
+        </div>
+        <div class="panel right-panel">
+            <div class="content">
+                <h3>¿Ya tienes una cuenta?</h3>
+                <p>Si ya tienes una cuenta puedes iniciar sesión aquí!</p>
+                <button class="btn transparent" id="sign-in-btn">Iniciar</button>
+            </div>
+            <img src="/images/logosinfondo.png" class="image" alt="logo">
+        </div>
+    </div>
+</div>
+<script src="/js/app.js"></script>
+<script>
+    $(document).ready(function() {
+        $('#registerForm').on('submit', function(event) {
+            event.preventDefault();
+
+            $.ajax({
+                type: 'POST',
+                url: '/users/register',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    nombre: $('#nombre').val(),
+                    apellido: $('#apellido').val(),
+                    dni: $('#dni').val(),
+                    fechaNacimiento: $('#fechaNacimiento').val(),
+                    email: $('#email').val(),
+                    pwd: $('#pwd').val()
+                }),
+                success: function(response) {
+                    $('#registerSuccess').text(response.message).show();
+                    $('#registerError').hide();
+                    $('#nombreError').text('');
+                    $('#apellidoError').text('');
+                    $('#dniError').text('');
+                    $('#fechaNacimientoError').text('');
+                    $('#emailError').text('');
+                    $('#pwdError').text('');
+                },
+                error: function(xhr) {
+                    let errors = xhr.responseJSON;
+                    $('#nombreError').text(errors.nombre || '');
+                    $('#apellidoError').text(errors.apellido || '');
+                    $('#dniError').text(errors.dni || '');
+                    $('#fechaNacimientoError').text(errors.fechaNacimiento || '');
+                    $('#emailError').text(errors.email || '');
+                    $('#pwdError').text(errors.pwd || '');
+                    $('#registerError').text('Corrige los errores en el formulario y vuelve a intentarlo.').show();
+                    $('#registerSuccess').hide();
+                }
+            });
+        });
+
+        $('#loginForm').on('submit', function(event) {
+            event.preventDefault();
+
+            $.ajax({
+                type: 'POST',
+                url: '/processLogin',
+                contentType: 'application/x-www-form-urlencoded',
+                data: $(this).serialize(),
+                success: function(response) {
+                    window.location.href = '/index';
+                },
+                error: function(xhr) {
+                    $('#loginError').text('Email o contraseña incorrectos.').show();
+                }
+            });
+        });
+    });
+</script>
+</body>
+</html>
