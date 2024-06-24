@@ -52,15 +52,18 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.5.1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+
 <script>
     const ctx = document.getElementById('pressureChart').getContext('2d');
     let pressureChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: [], // Etiquetas de tiempo
+            labels: [], // Time labels
             datasets: [{
                 label: 'Pressure',
-                data: [], // Valores de presión
+                data: [], // Pressure values
                 borderColor: 'rgba(75, 192, 192, 1)',
                 borderWidth: 1,
                 fill: false
@@ -89,7 +92,37 @@
         }
     });
 
-    const updateChart = () => {
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set default dates and update chart with historical data
+        setDefaultDates();
+        updateChart();
+
+        // Establish WebSocket connection for real-time updates
+        const socket = new SockJS('/ws');
+        const stompClient = Stomp.over(socket);
+
+        stompClient.connect({}, function(frame) {
+            console.log('Connected: ' + frame);
+
+            stompClient.subscribe('/topic/pressure', function(message) {
+                const data = JSON.parse(message.body);
+                console.log('Received WebSocket message:', data); // Debug log
+                addRealTimeData(data);
+            });
+        });
+
+        function addRealTimeData(data) {
+            console.log('Adding real-time data:', data); // Debug log
+            const time = new Date(data.timestamp);
+            const pressure = parseFloat(data.Presion.value);
+
+            pressureChart.data.labels.push(time);
+            pressureChart.data.datasets[0].data.push(pressure);
+            pressureChart.update();
+        }
+    });
+
+    function updateChart() {
         const start = document.getElementById('start').value;
         const end = document.getElementById('end').value;
         if (start && end) {
@@ -97,16 +130,16 @@
                 .then(response => response.json())
                 .then(data => {
                     const labels = data.map(reading => new Date(reading.timestamp));
-                    const values = data.map(reading => reading.pressure);
+                    const values = data.map(reading => parseFloat(reading.Presion.value));
 
                     pressureChart.data.labels = labels;
                     pressureChart.data.datasets[0].data = values;
                     pressureChart.update();
                 });
         }
-    };
+    }
 
-    const setDefaultDates = () => {
+    function setDefaultDates() {
         const now = new Date();
         const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
         const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
@@ -118,17 +151,17 @@
 
         document.getElementById('start').value = formatDate(startOfDay);
         document.getElementById('end').value = formatDate(endOfDay);
-    };
+    }
 
-    const exportToCsv = () => {
+    function exportToCsv() {
         const start = document.getElementById('start').value;
         const end = document.getElementById('end').value;
         if (start && end) {
             window.location.href = `/api/pressure/readings/export?start=${start}&end=${end}`;
         }
-    };
+    }
 
-    const exportToPdf = () => {
+    function exportToPdf() {
         const start = document.getElementById('start').value;
         const end = document.getElementById('end').value;
         if (start && end) {
@@ -141,28 +174,20 @@
                 pdf.save('dashboard.pdf');
             });
         }
-    };
+    }
 
-    document.addEventListener('DOMContentLoaded', () => {
-        setDefaultDates(); // Set default dates on page load
-        updateChart(); // Update the chart with default dates
-    });
-
-    // Actualizar el gráfico cada minuto
-    setInterval(updateChart, 60000);
-
-    function showSidebar(){
+    function showSidebar() {
         const sidebar = document.querySelector('.sidebar');
         sidebar.style.display = 'flex';
     }
 
-    function hideSidebar(){
+    function hideSidebar() {
         const sidebar = document.querySelector('.sidebar');
         sidebar.style.display = 'none';
     }
 </script>
 
-<!-- Incluir Bootstrap JS y dependencias -->
+<!-- Include Bootstrap JS and dependencies -->
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
